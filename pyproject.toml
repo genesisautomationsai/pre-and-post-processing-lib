@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pii-guardian"
+version = "1.0.0"
+description = "A reusable library for detecting and redacting Personally Identifiable Information (PII) from text"
+readme = "pii_guardian/README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "PII Guardian Team", email = "your-email@example.com"}
+]
+keywords = ["pii", "security", "redaction", "privacy", "gdpr", "hipaa", "data-protection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Security",
+    "Topic :: Text Processing",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.optional-dependencies]
+ner = ["spacy>=3.0.0"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "mypy>=0.990",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/pii-guardian"
+Documentation = "https://github.com/yourusername/pii-guardian/blob/main/pii_guardian/README.md"
+Repository = "https://github.com/yourusername/pii-guardian"
+Issues = "https://github.com/yourusername/pii-guardian/issues"
+
+[tool.setuptools]
+packages = ["pii_guardian"]
+
+[tool.setuptools.package-data]
+pii_guardian = ["README.md"]
