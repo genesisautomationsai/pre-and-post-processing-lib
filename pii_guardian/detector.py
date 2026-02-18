@@ -75,28 +75,24 @@ class PIIDetector:
         # Filter by entity types (tiered redaction)
         always_mask = set(self.config.get("redact_types", []))
         conditional_mask = set(self.config.get("conditional_mask_types", []))
-        sensitive_mask = set(self.config.get("sensitive_mask_types", []))
+        # sensitive_trigger_types: their presence causes PERSON to be masked,
+        # but they are never masked themselves (details stay visible)
+        sensitive_triggers = set(self.config.get("sensitive_trigger_types", []))
 
-        if conditional_mask or sensitive_mask:
+        if conditional_mask or sensitive_triggers:
             tier1 = [e for e in entities if e.entity_type in always_mask]
             tier2 = [e for e in entities if e.entity_type in conditional_mask]
-            tier2s = [e for e in entities if e.entity_type in sensitive_mask]
 
-            # Tier 2 standard: unblocked by any Tier 1 entity
-            include_tier2 = bool(tier1)
-            # Tier 2 sensitive: unblocked by Tier 1 OR by a detected PERSON
-            person_present = any(e.entity_type == "PERSON" for e in entities)
-            include_sensitive = bool(tier1) or person_present
+            # Tier 2 (PERSON, DOB, ZIP, etc.) is unblocked by Tier 1 OR by a sensitive trigger
+            sensitive_present = any(e.entity_type in sensitive_triggers for e in entities)
+            include_tier2 = bool(tier1) or sensitive_present
 
-            entities = (
-                tier1
-                + (tier2 if include_tier2 else [])
-                + (tier2s if include_sensitive else [])
-            )
+            # Sensitive trigger types are intentionally excluded from output (never masked)
+            entities = tier1 + (tier2 if include_tier2 else [])
             logger.debug(
                 f"Tiered masking: {len(tier1)} Tier-1, "
-                f"{len(tier2) if include_tier2 else 0}/{len(tier2)} Tier-2, "
-                f"{len(tier2s) if include_sensitive else 0}/{len(tier2s)} Tier-2-sensitive"
+                f"{len(tier2) if include_tier2 else 0}/{len(tier2)} Tier-2 "
+                f"(sensitive trigger present: {sensitive_present})"
             )
         elif always_mask:
             entities = [e for e in entities if e.entity_type in always_mask]

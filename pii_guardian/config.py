@@ -31,8 +31,9 @@ class PIIConfig:
         "PERSON", "DATE_OF_BIRTH", "ZIP_CODE", "STREET_ADDRESS"
     ])
 
-    # Tier 2 Sensitive: High-harm attributes — mask when Tier 1 OR PERSON is present
-    sensitive_mask_types: List[str] = field(default_factory=lambda: [
+    # Sensitive trigger types: presence of these types triggers PERSON masking,
+    # but these types themselves are never masked (the details stay visible)
+    sensitive_trigger_types: List[str] = field(default_factory=lambda: [
         "CREDIT_SCORE", "CRIMINAL_HISTORY", "EVICTION_HISTORY"
     ])
 
@@ -74,11 +75,11 @@ class PIIConfig:
         )
         conditional_mask_types = [t.strip() for t in conditional_mask_str.split(",") if t.strip()]
 
-        sensitive_mask_str = os.getenv(
-            "PII_SENSITIVE_MASK_TYPES",
+        sensitive_trigger_str = os.getenv(
+            "PII_SENSITIVE_TRIGGER_TYPES",
             "CREDIT_SCORE,CRIMINAL_HISTORY,EVICTION_HISTORY"
         )
-        sensitive_mask_types = [t.strip() for t in sensitive_mask_str.split(",") if t.strip()]
+        sensitive_trigger_types = [t.strip() for t in sensitive_trigger_str.split(",") if t.strip()]
 
         return cls(
             confidence_threshold=float(os.getenv("PII_CONFIDENCE_THRESHOLD", "0.8")),
@@ -87,7 +88,7 @@ class PIIConfig:
             ner_model=os.getenv("PII_NER_MODEL", "en_core_web_sm"),
             redact_types=redact_types,
             conditional_mask_types=conditional_mask_types,
-            sensitive_mask_types=sensitive_mask_types,
+            sensitive_trigger_types=sensitive_trigger_types,
             audit_enabled=os.getenv("PII_AUDIT_ENABLED", "true").lower() == "true",
             audit_log_path=os.getenv("PII_AUDIT_LOG_PATH", "./logs/pii_audit.log"),
         )
