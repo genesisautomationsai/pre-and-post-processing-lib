@@ -20,10 +20,20 @@ class PIIConfig:
     ner_model: str = "en_core_web_sm"
 
     # Selective redaction
+    # Tier 1: Direct identifiers — always mask
     redact_types: List[str] = field(default_factory=lambda: [
-        "PERSON", "EMAIL", "PHONE", "SSN", "CREDIT_CARD",
-        "DATE_OF_BIRTH", "PASSPORT", "DRIVERS_LICENSE",
-        "MEDICAL_RECORD", "IP_ADDRESS"
+        "EMAIL", "PHONE", "SSN", "CREDIT_CARD", "PASSPORT",
+        "DRIVERS_LICENSE", "MEDICAL_RECORD", "IP_ADDRESS", "BANK_ACCOUNT"
+    ])
+
+    # Tier 2: Quasi-identifiers — mask only when a Tier 1 entity is present
+    conditional_mask_types: List[str] = field(default_factory=lambda: [
+        "PERSON", "DATE_OF_BIRTH", "ZIP_CODE", "STREET_ADDRESS"
+    ])
+
+    # Tier 2 Sensitive: High-harm attributes — mask when Tier 1 OR PERSON is present
+    sensitive_mask_types: List[str] = field(default_factory=lambda: [
+        "CREDIT_SCORE", "CRIMINAL_HISTORY", "EVICTION_HISTORY"
     ])
 
     # Audit settings
@@ -54,9 +64,21 @@ class PIIConfig:
         # Parse redact_types
         redact_types_str = os.getenv(
             "PII_REDACT_TYPES",
-            "PERSON,EMAIL,PHONE,SSN,CREDIT_CARD,DATE_OF_BIRTH,PASSPORT,DRIVERS_LICENSE,MEDICAL_RECORD,IP_ADDRESS"
+            "EMAIL,PHONE,SSN,CREDIT_CARD,PASSPORT,DRIVERS_LICENSE,MEDICAL_RECORD,IP_ADDRESS,BANK_ACCOUNT"
         )
         redact_types = [t.strip() for t in redact_types_str.split(",") if t.strip()]
+
+        conditional_mask_str = os.getenv(
+            "PII_CONDITIONAL_MASK_TYPES",
+            "PERSON,DATE_OF_BIRTH,ZIP_CODE,STREET_ADDRESS"
+        )
+        conditional_mask_types = [t.strip() for t in conditional_mask_str.split(",") if t.strip()]
+
+        sensitive_mask_str = os.getenv(
+            "PII_SENSITIVE_MASK_TYPES",
+            "CREDIT_SCORE,CRIMINAL_HISTORY,EVICTION_HISTORY"
+        )
+        sensitive_mask_types = [t.strip() for t in sensitive_mask_str.split(",") if t.strip()]
 
         return cls(
             confidence_threshold=float(os.getenv("PII_CONFIDENCE_THRESHOLD", "0.8")),
@@ -64,6 +86,8 @@ class PIIConfig:
             enable_ner=os.getenv("PII_ENABLE_NER", "false").lower() == "true",
             ner_model=os.getenv("PII_NER_MODEL", "en_core_web_sm"),
             redact_types=redact_types,
+            conditional_mask_types=conditional_mask_types,
+            sensitive_mask_types=sensitive_mask_types,
             audit_enabled=os.getenv("PII_AUDIT_ENABLED", "true").lower() == "true",
             audit_log_path=os.getenv("PII_AUDIT_LOG_PATH", "./logs/pii_audit.log"),
         )

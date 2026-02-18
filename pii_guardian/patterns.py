@@ -43,6 +43,15 @@ PII_PATTERNS = {
 
     # Medical Record Number
     "MEDICAL_RECORD": r'\b(?:MRN|Medical\s+Record)[:\s#]*([A-Z0-9]{6,12})\b',
+
+    # Credit Score (numeric references to FICO / VantageScore)
+    "CREDIT_SCORE": r'\b(?:credit\s+score|FICO\s+score?|VantageScore)[:\s,of]*\d{3}\b',
+
+    # Criminal History (mentions of record / conviction / charge)
+    "CRIMINAL_HISTORY": r'\b(?:criminal\s+(?:record|history|background|charge)|prior\s+(?:felony|conviction|offense)|convicted\s+of|felony\s+conviction|misdemeanor\s+conviction)\b',
+
+    # Eviction History (mentions of eviction record / prior eviction)
+    "EVICTION_HISTORY": r'\b(?:eviction\s+(?:record|history|on\s+file|notice)|prior\s+eviction|evicted\s+(?:from|in|for)|unlawful\s+detainer)\b',
 }
 
 # Domain-specific patterns

@@ -72,11 +72,35 @@ class PIIDetector:
         threshold = self.config.get("confidence_threshold", 0.8)
         entities = [e for e in entities if e.confidence >= threshold]
 
-        # Filter by entity types (selective redaction)
-        redact_types = self.config.get("redact_types", [])
-        if redact_types:
-            entities = [e for e in entities if e.entity_type in redact_types]
-            logger.debug(f"Filtering to redact only: {', '.join(redact_types)}")
+        # Filter by entity types (tiered redaction)
+        always_mask = set(self.config.get("redact_types", []))
+        conditional_mask = set(self.config.get("conditional_mask_types", []))
+        sensitive_mask = set(self.config.get("sensitive_mask_types", []))
+
+        if conditional_mask or sensitive_mask:
+            tier1 = [e for e in entities if e.entity_type in always_mask]
+            tier2 = [e for e in entities if e.entity_type in conditional_mask]
+            tier2s = [e for e in entities if e.entity_type in sensitive_mask]
+
+            # Tier 2 standard: unblocked by any Tier 1 entity
+            include_tier2 = bool(tier1)
+            # Tier 2 sensitive: unblocked by Tier 1 OR by a detected PERSON
+            person_present = any(e.entity_type == "PERSON" for e in entities)
+            include_sensitive = bool(tier1) or person_present
+
+            entities = (
+                tier1
+                + (tier2 if include_tier2 else [])
+                + (tier2s if include_sensitive else [])
+            )
+            logger.debug(
+                f"Tiered masking: {len(tier1)} Tier-1, "
+                f"{len(tier2) if include_tier2 else 0}/{len(tier2)} Tier-2, "
+                f"{len(tier2s) if include_sensitive else 0}/{len(tier2s)} Tier-2-sensitive"
+            )
+        elif always_mask:
+            entities = [e for e in entities if e.entity_type in always_mask]
+            logger.debug(f"Filtering to redact only: {', '.join(always_mask)}")
 
         logger.info(f"Total PII entities detected: {len(entities)}")
         return entities
